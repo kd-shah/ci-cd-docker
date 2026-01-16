@@ -1,57 +1,69 @@
-name: Production Deploy (Docker Compose)
+name: Deploy (Dev / Staging / Prod)
 
 on:
   push:
     branches:
-      - main
       - dev
       - stage
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    env:
+      APP_DIR: /home/kunalshah5301/ci-cd-docker
 
-      - name: Copy project to server
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set environment variables
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == "dev" ]]; then
+            echo "ENV=dev" >> $GITHUB_ENV
+            echo "BACKEND_PORT=5000" >> $GITHUB_ENV
+            echo "FRONTEND_PORT=5173" >> $GITHUB_ENV
+            echo "POSTGRES_PORT=5433" >> $GITHUB_ENV
+            echo "REDIS_PORT=6379" >> $GITHUB_ENV
+            echo "VITE_API_URL=http://localhost:5000" >> $GITHUB_ENV
+
+          elif [[ "${GITHUB_REF_NAME}" == "stage" ]]; then
+            echo "ENV=staging" >> $GITHUB_ENV
+            echo "BACKEND_PORT=5001" >> $GITHUB_ENV
+            echo "FRONTEND_PORT=5174" >> $GITHUB_ENV
+            echo "POSTGRES_PORT=5434" >> $GITHUB_ENV
+            echo "REDIS_PORT=6380" >> $GITHUB_ENV
+            echo "VITE_API_URL=http://localhost:5001" >> $GITHUB_ENV
+
+          else
+            echo "ENV=production" >> $GITHUB_ENV
+            echo "BACKEND_PORT=5002" >> $GITHUB_ENV
+            echo "FRONTEND_PORT=5175" >> $GITHUB_ENV
+            echo "POSTGRES_PORT=5435" >> $GITHUB_ENV
+            echo "REDIS_PORT=6381" >> $GITHUB_ENV
+            echo "VITE_API_URL=https://api.yourdomain.com" >> $GITHUB_ENV
+          fi
+
+      - name: Copy files to server
         uses: appleboy/scp-action@v1
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          port: 22
           source: .
-          target: /home/kunalshah5301/ci-cd-docker
+          target: ${{ env.APP_DIR }}
 
-      - name: Deploy application on server
-        uses: appleboy/ssh-action@master
+      - name: Deploy on server
+        uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            cd /home/kunalshah5301/ci-cd-docker
+            cd ${{ env.APP_DIR }}
 
-            # Ensure Docker is installed
-            if ! command -v docker &> /dev/null; then
-              curl -fsSL https://get.docker.com | sh
-              sudo usermod -aG docker $USER
-            fi
+            docker compose \
+              -p ci-cd-docker-${ENV} \
+              up -d --build
 
-            # Ensure Docker Compose is available
-            if ! docker compose version &> /dev/null; then
-              sudo apt-get update
-              sudo apt-get install -y docker-compose-plugin
-            fi
-
-            # Build frontend with API URL
-            sudo docker compose build \
-              --build-arg VITE_API_URL='${{ vars.VITE_API_URL }}'
-
-            # Start all services
-            sudo docker compose up -d
-
-            # Cleanup unused images
-            sudo docker system prune -af
+            docker system prune -af
