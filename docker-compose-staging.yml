@@ -34,7 +34,7 @@ services:
     build:
       context: ./frontend
       args:
-        VITE_API_URL: ${{ vars.VITE_API_URL_STAGING }}
+        VITE_API_URL: ${VITE_API_URL}
     ports:
       - "5174:80"
     env_file:
