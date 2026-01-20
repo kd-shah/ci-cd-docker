@@ -53,7 +53,7 @@ jobs:
 
             export VITE_API_URL="${{ env.VITE_API_URL }}"
 
-            docker compose \
+            sudo docker compose \
               -f ${{ env.COMPOSE_FILE }} \
               -p ci-cd-docker-${GITHUB_REF_NAME} \
               up -d --build
