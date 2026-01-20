@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - dev
-      - stage
+      - staging
       - main
 
 jobs:
@@ -15,35 +15,24 @@ jobs:
       APP_DIR: /home/kunalshah5301/ci-cd-docker
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Set environment variables
+      - name: Determine environment & compose file
         run: |
           if [[ "${GITHUB_REF_NAME}" == "dev" ]]; then
-            echo "ENV=dev" >> $GITHUB_ENV
-            echo "BACKEND_PORT=5000" >> $GITHUB_ENV
-            echo "FRONTEND_PORT=5173" >> $GITHUB_ENV
-            echo "POSTGRES_PORT=5433" >> $GITHUB_ENV
-            echo "REDIS_PORT=6379" >> $GITHUB_ENV
-            echo "VITE_API_URL=http://localhost:5000" >> $GITHUB_ENV
+            echo "COMPOSE_FILE=docker-compose.dev.yml" >> $GITHUB_ENV
+            echo "VITE_API_URL=${{ vars.VITE_API_URL_DEV }}" >> $GITHUB_ENV
 
-          elif [[ "${GITHUB_REF_NAME}" == "stage" ]]; then
-            echo "ENV=staging" >> $GITHUB_ENV
-            echo "BACKEND_PORT=5001" >> $GITHUB_ENV
-            echo "FRONTEND_PORT=5174" >> $GITHUB_ENV
-            echo "POSTGRES_PORT=5434" >> $GITHUB_ENV
-            echo "REDIS_PORT=6380" >> $GITHUB_ENV
-            echo "VITE_API_URL=http://localhost:5001" >> $GITHUB_ENV
+          elif [[ "${GITHUB_REF_NAME}" == "staging" ]]; then
+            echo "COMPOSE_FILE=docker-compose.staging.yml" >> $GITHUB_ENV
+            echo "VITE_API_URL=${{ vars.VITE_API_URL_STAGING }}" >> $GITHUB_ENV
 
           else
-            echo "ENV=production" >> $GITHUB_ENV
-            echo "BACKEND_PORT=5002" >> $GITHUB_ENV
-            echo "FRONTEND_PORT=5175" >> $GITHUB_ENV
-            echo "POSTGRES_PORT=5435" >> $GITHUB_ENV
-            echo "REDIS_PORT=6381" >> $GITHUB_ENV
-            echo "VITE_API_URL=https://api.yourdomain.com" >> $GITHUB_ENV
+            echo "COMPOSE_FILE=docker-compose.prod.yml" >> $GITHUB_ENV
+            echo "VITE_API_URL=${{ vars.VITE_API_URL_PROD }}" >> $GITHUB_ENV
           fi
-
+          
       - name: Copy files to server
         uses: appleboy/scp-action@v1
         with:
@@ -62,8 +51,11 @@ jobs:
           script: |
             cd ${{ env.APP_DIR }}
 
+            export VITE_API_URL="${{ env.VITE_API_URL }}"
+
             docker compose \
-              -p ci-cd-docker-${ENV} \
+              -f ${{ env.COMPOSE_FILE }} \
+              -p ci-cd-docker-${GITHUB_REF_NAME} \
               up -d --build
 
-            docker system prune -af
+            docker image prune -f
