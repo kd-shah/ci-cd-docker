@@ -1,0 +1,48 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:17
+    env_file:
+      - ./backend/.env.dev
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+    command: redis-server --appendonly yes
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./backend/.env.dev
+    depends_on:
+      - postgres
+      - redis
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${{ vars.VITE_API_URL_DEV }}
+    ports:
+      - "5173:80"
+    env_file:
+      - ./frontend/.env.dev
+    depends_on:
+      - backend
+    restart: always
+
+volumes:
+  postgres_dev_data:
+  redis_dev_data:
