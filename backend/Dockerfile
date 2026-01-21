@@ -36,9 +36,6 @@ COPY --from=builder /app/dist ./dist
 # Copy prisma directory
 COPY prisma ./prisma
 
-# Copy env file (same as old project)
-COPY .env ./
-
 # Copy startup script
 COPY startup.sh ./
 RUN chmod +x startup.sh
