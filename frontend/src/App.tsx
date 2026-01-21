@@ -205,21 +205,21 @@ export default function App() {
             {/* Results */}
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                Users {users.length > 0 && `(${users.length})`}
+                Users {users?.length && users.length > 0 && `(${users.length})`}
               </h3>
               <div className="space-y-3 max-h-[500px] overflow-y-auto">
-                {users.length > 0 ? (
+                {users?.length && users.length > 0 ? (
                   users.map((user) => (
                     <div
                       key={user.id}
                       className="border border-gray-200 rounded p-4 hover:bg-gray-50 transition"
                     >
                       <h4 className="font-semibold text-gray-900 mb-2">
-                        {user.firstName} {user.lastName}
+                        {user?.firstName} {user?.lastName}
                       </h4>
-                      <p className="text-sm text-gray-600">{user.email}</p>
+                      <p className="text-sm text-gray-600">{user?.email}</p>
                       <p className="text-sm text-gray-600">
-                        {user.phoneNumber}
+                        {user?.phoneNumber}
                       </p>
                     </div>
                   ))
