@@ -18,30 +18,37 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Rsync
+        uses: burnett01/rsync-deployments@7.0.2
+        with:
+          switches: -avzr --delete
+          path: ./
+          remote_path: /home/${{ secrets.USERNAME }}/ci-cd-docker
+          remote_host: ${{ secrets.HOST }}
+          remote_user: ${{ secrets.USERNAME }}
+          remote_key: ${{ secrets.SSH_KEY }}
+          exclude: |
+            .git
+            .github
+            **/node_modules
+            **/dist
+            **/.env*
+
       - name: Determine environment & compose file
         run: |
           if [[ "${GITHUB_REF_NAME}" == "dev" ]]; then
-            echo "COMPOSE_FILE=docker-compose.dev.yml" >> $GITHUB_ENV
+            echo "COMPOSE_FILE=docker-compose-dev.yml" >> $GITHUB_ENV
             echo "VITE_API_URL=${{ vars.VITE_API_URL_DEV }}" >> $GITHUB_ENV
 
           elif [[ "${GITHUB_REF_NAME}" == "staging" ]]; then
-            echo "COMPOSE_FILE=docker-compose.staging.yml" >> $GITHUB_ENV
+            echo "COMPOSE_FILE=docker-compose-staging.yml" >> $GITHUB_ENV
             echo "VITE_API_URL=${{ vars.VITE_API_URL_STAGING }}" >> $GITHUB_ENV
 
           else
-            echo "COMPOSE_FILE=docker-compose.prod.yml" >> $GITHUB_ENV
+            echo "COMPOSE_FILE=docker-compose-production.yml" >> $GITHUB_ENV
             echo "VITE_API_URL=${{ vars.VITE_API_URL_PROD }}" >> $GITHUB_ENV
           fi
-          
-      - name: Copy files to server
-        uses: appleboy/scp-action@v1
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
-          source: .
-          target: ${{ env.APP_DIR }}
-
+        
       - name: Deploy on server
         uses: appleboy/ssh-action@v1
         with:
