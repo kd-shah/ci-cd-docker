@@ -21,13 +21,7 @@ jobs:
       - name: Rsync
         uses: burnett01/rsync-deployments@v8
         with:
-          switches: |
-            -avzr --delete
-            --exclude='.git'
-            --exclude='.github'
-            --exclude='**/node_modules'
-            --exclude='**/dist'
-            --exclude='**/.env*'
+          switches: -avzr --delete --exclude='.git' --exclude='.github' --exclude='**/node_modules' --exclude='**/dist' --exclude='**/.env*'
           path: ./
           remote_path: /home/${{ secrets.USERNAME }}/ci-cd-docker/
           remote_host: ${{ secrets.HOST }}
